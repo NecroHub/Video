@@ -3,55 +3,64 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reel — local video library</title>
+<title>NightClips — local video library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#eae7df;
-    --ink-dim:#9c988d;
-    --ink-faint:#6b675e;
-    --bg:#141310;
-    --bg-1:#1b1a16;
-    --bg-2:#232019;
-    --line:#332f26;
-    --accent:#e8ab3a;
-    --accent-dim:#8a6a24;
-    --danger:#c1543d;
-    --radius:3px;
+    --ink:#eceded;
+    --ink-dim:#9a9da3;
+    --ink-faint:#686b70;
+    --bg:#0c0d0e;
+    --bg-1:#161719;
+    --bg-2:#1f2123;
+    --line:#2c2e31;
+    --accent:#9aa0a8;
+    --accent-2:#5c6066;
+    --accent-dim:#6b6f75;
+    --danger:#e0605c;
+    --radius:18px;
+    --radius-sm:12px;
+    --radius-pill:999px;
     --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
-    --sans:"Neue Haas Grotesk","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --sans:"Nunito","Neue Haas Grotesk","Helvetica Neue",Helvetica,Arial,sans-serif;
     --mono:"JetBrains Mono","SF Mono",Consolas,monospace;
-  }
-  @media (prefers-color-scheme: light){
-    :root:not([data-theme="dark"]){
-      --ink:#211f1a; --ink-dim:#5c584c; --ink-faint:#8a8578;
-      --bg:#f2ede0; --bg-1:#e9e2d0; --bg-2:#ded5bd; --line:#cdc3a7;
-      --accent:#a9631a; --accent-dim:#c98a3b;
-    }
+    --glow: 0 0 0 1px rgba(255,255,255,.05), 0 8px 30px rgba(0,0,0,.55);
   }
   :root[data-theme="light"]{
-    --ink:#211f1a; --ink-dim:#5c584c; --ink-faint:#8a8578;
-    --bg:#f2ede0; --bg-1:#e9e2d0; --bg-2:#ded5bd; --line:#cdc3a7;
-    --accent:#a9631a; --accent-dim:#c98a3b;
+    --ink:#202123; --ink-dim:#55585c; --ink-faint:#85888c;
+    --bg:#eeeeef; --bg-1:#e2e2e4; --bg-2:#d4d5d7; --line:#c3c4c7;
+    --accent:#3f4145; --accent-2:#6b6e73; --accent-dim:#55585c;
+    --glow: 0 0 0 1px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.12);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:var(--bg); color:var(--ink);
+    background:
+      radial-gradient(900px 500px at 15% -10%, rgba(255,255,255,.05), transparent 60%),
+      radial-gradient(700px 500px at 100% 0%, rgba(255,255,255,.03), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--ink);
     font-family:var(--sans);
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
   }
-  ::selection{background:var(--accent);color:#141310;}
+  ::selection{background:var(--accent);color:#0a0817;}
   a{color:inherit;}
 
   /* ---------- Top bar ---------- */
   .topbar{
     position:sticky; top:0; z-index:40;
     display:flex; align-items:center; gap:24px;
-    padding:18px 28px;
-    background:color-mix(in srgb, var(--bg) 88%, transparent);
-    backdrop-filter:blur(10px);
-    border-bottom:1px solid var(--line);
+    padding:16px 24px;
+    margin:14px 20px 0;
+    background:color-mix(in srgb, var(--bg-1) 78%, transparent);
+    backdrop-filter:blur(16px);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--glow);
   }
   .brand{
     font-family:var(--serif);
@@ -59,7 +68,11 @@
     display:flex; align-items:baseline; gap:8px;
     white-space:nowrap;
   }
-  .brand .mark{color:var(--accent); font-style:italic;}
+  .brand .mark{
+    background:linear-gradient(135deg, #ffffff, var(--accent-2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    font-style:italic;
+  }
   .brand small{font-family:var(--sans); font-size:11px; color:var(--ink-faint); font-weight:500; letter-spacing:.04em;}
 
   .search{
@@ -68,15 +81,15 @@
   }
   .search input{
     width:100%;
-    background:var(--bg-1);
+    background:var(--bg-2);
     border:1px solid var(--line);
     color:var(--ink);
-    padding:9px 14px 9px 32px;
-    border-radius:var(--radius);
+    padding:10px 16px 10px 34px;
+    border-radius:var(--radius-pill);
     font-size:13.5px;
     font-family:var(--sans);
   }
-  .search input:focus{outline:none;border-color:var(--accent-dim);}
+  .search input:focus{outline:none;border-color:var(--accent-dim); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);}
   .search::before{
     content:"";
     position:absolute; left:11px; top:50%; transform:translateY(-50%);
@@ -97,51 +110,54 @@
   button, .btn{
     font-family:var(--sans);
     cursor:pointer;
-    border-radius:var(--radius);
+    border-radius:var(--radius-pill);
     border:1px solid var(--line);
-    background:var(--bg-1);
+    background:var(--bg-2);
     color:var(--ink);
-    padding:9px 16px;
+    padding:10px 18px;
     font-size:13px;
     font-weight:500;
     letter-spacing:.01em;
-    transition:border-color .15s ease, background .15s ease, color .15s ease;
+    transition:border-color .15s ease, background .15s ease, color .15s ease, transform .1s ease, box-shadow .15s ease;
     display:inline-flex; align-items:center; gap:7px;
   }
-  button:hover, .btn:hover{border-color:var(--accent-dim); color:var(--ink);}
-  button:active{transform:translateY(1px);}
+  button:hover, .btn:hover{border-color:var(--accent-dim); color:var(--ink); background:color-mix(in srgb, var(--accent) 10%, var(--bg-2));}
+  button:active{transform:scale(.97);}
   .btn-primary{
-    background:var(--accent); color:#181510; border-color:var(--accent); font-weight:600;
+    background:linear-gradient(135deg, #4a4d52, #2a2c2f);
+    color:#fff; border-color:transparent; font-weight:600;
+    box-shadow:0 4px 18px rgba(0,0,0,.45);
   }
-  .btn-primary:hover{background:var(--accent-dim); border-color:var(--accent-dim); color:#181510;}
-  .btn-icon{padding:9px; width:36px; height:36px; justify-content:center;}
-  .btn-danger:hover{border-color:var(--danger); color:var(--danger);}
+  .btn-primary:hover{filter:brightness(1.1); background:linear-gradient(135deg, var(--accent), var(--accent-dim)); color:#fff;}
+  .btn-icon{padding:10px; width:38px; height:38px; justify-content:center; border-radius:var(--radius-pill);}
+  .btn-danger:hover{border-color:var(--danger); color:var(--danger); background:color-mix(in srgb, var(--danger) 10%, var(--bg-2));}
+  .btn svg, button svg{width:14px; height:14px; flex-shrink:0; display:block;}
+  .btn-icon svg{width:16px; height:16px;}
+  .btn-icon.active{border-color:var(--accent); color:var(--accent); background:color-mix(in srgb, var(--accent) 18%, transparent);}
 
   input[type=file]{display:none;}
 
   /* ---------- Layout ---------- */
-  .shell{max-width:1320px; margin:0 auto; padding:0 28px 80px;}
+  .shell{max-width:1320px; margin:0 auto; padding:0 20px 80px;}
 
   .stagebar{
     display:flex; align-items:center; justify-content:space-between;
-    padding:26px 0 18px;
-    border-bottom:1px solid var(--line);
-    margin-bottom:26px;
+    padding:30px 4px 20px;
+    margin-bottom:22px;
     gap:16px; flex-wrap:wrap;
   }
   .stagebar h1{
     font-family:var(--serif); font-weight:400; font-style:italic;
-    font-size:28px; margin:0; color:var(--ink);
+    font-size:30px; margin:0; color:var(--ink);
   }
   .stagebar .count{color:var(--ink-faint); font-size:13px; margin-left:10px; font-style:normal; font-family:var(--sans);}
 
   .filters{display:flex; gap:8px; flex-wrap:wrap;}
   .chip{
-    padding:6px 13px; border:1px solid var(--line); border-radius:20px;
-    font-size:12.5px; color:var(--ink-dim); cursor:pointer; background:transparent;
-    display:inline-flex; align-items:center; gap:0;
+    padding:7px 15px; border:1px solid var(--line); border-radius:var(--radius-pill);
+    font-size:12.5px; color:var(--ink-dim); cursor:pointer; background:var(--bg-1);
   }
-  .chip.active{border-color:var(--accent); color:var(--accent); background:color-mix(in srgb, var(--accent) 12%, transparent);}
+  .chip.active{border-color:transparent; color:#fff; background:linear-gradient(135deg, #4a4d52, #2a2c2f);}
 
   /* ---------- Grid ---------- */
   .grid{
@@ -156,86 +172,91 @@
     overflow:hidden;
     cursor:pointer;
     position:relative;
-    transition:border-color .15s ease;
+    transition:border-color .18s ease, transform .18s ease, box-shadow .18s ease;
   }
-  .card:hover{border-color:var(--accent-dim);}
+  .card:hover{border-color:var(--accent-dim); transform:translateY(-3px); box-shadow:var(--glow);}
   .card .thumb-wrap{
     aspect-ratio:16/9; background:var(--bg-2); position:relative; overflow:hidden;
     display:flex; align-items:center; justify-content:center;
+    border-radius:var(--radius) var(--radius) 0 0;
   }
   .card .thumb-wrap img{width:100%; height:100%; object-fit:cover; display:block;}
   .card .thumb-fallback{
     color:var(--ink-faint); font-family:var(--serif); font-style:italic; font-size:14px;
   }
   .card .duration{
-    position:absolute; right:7px; bottom:7px;
-    background:rgba(10,9,7,.78); color:#eee;
+    position:absolute; right:8px; bottom:8px;
+    background:rgba(10,8,23,.82); color:#eee;
     font-family:var(--mono); font-size:10.5px;
-    padding:2px 6px; border-radius:2px; letter-spacing:.02em;
+    padding:3px 8px; border-radius:var(--radius-pill); letter-spacing:.02em;
+    border:1px solid rgba(139,107,255,.25);
   }
-  .card .meta{padding:12px 13px 14px;}
+  .card .meta{padding:13px 14px 15px;}
   .card .title{
     font-size:13.5px; font-weight:500; color:var(--ink);
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:4px;
   }
   .card .sub{font-size:11.5px; color:var(--ink-faint); display:flex; gap:8px;}
   .card .cardmenu{
-    position:absolute; top:7px; right:7px;
-    width:26px; height:26px; border-radius:50%;
-    background:rgba(10,9,7,.55); color:#eee; border:none;
+    position:absolute; top:8px; right:8px;
+    width:28px; height:28px; border-radius:50%;
+    background:rgba(10,8,23,.7); color:#eee; border:1px solid rgba(139,107,255,.25);
     display:flex; align-items:center; justify-content:center;
-    opacity:0; transition:opacity .12s ease;
+    opacity:0; transition:opacity .12s ease, background .15s ease;
     font-size:16px; padding:0;
   }
+  .card .cardmenu:hover{background:color-mix(in srgb, var(--danger) 40%, rgba(10,8,23,.7));}
   .card:hover .cardmenu{opacity:1;}
 
   .empty{
     text-align:center; padding:110px 20px; color:var(--ink-faint);
+    background:var(--bg-1); border:1px solid var(--line); border-radius:var(--radius);
   }
   .empty .big{font-family:var(--serif); font-style:italic; font-size:26px; color:var(--ink-dim); margin-bottom:10px;}
   .empty p{font-size:13.5px; max-width:360px; margin:0 auto 20px;}
 
   /* ---------- Player overlay ---------- */
   .overlay{
-    position:fixed; inset:0; background:rgba(8,7,5,.82);
-    backdrop-filter:blur(4px);
+    position:fixed; inset:0; background:rgba(6,4,16,.85);
+    backdrop-filter:blur(6px);
     z-index:100; display:none;
     align-items:center; justify-content:center;
     padding:30px;
   }
   .overlay.open{display:flex;}
   .player-panel{
-    background:var(--bg-1); border:1px solid var(--line); border-radius:4px;
+    background:var(--bg-1); border:1px solid var(--line); border-radius:24px;
     width:100%; max-width:980px; max-height:92vh; overflow:auto;
     display:flex; flex-direction:column;
+    box-shadow:var(--glow);
   }
   .player-head{
     display:flex; align-items:center; justify-content:space-between;
-    padding:16px 20px; border-bottom:1px solid var(--line);
+    padding:18px 22px; border-bottom:1px solid var(--line);
   }
   .player-title-row{display:flex; align-items:center; gap:10px; flex:1; min-width:0;}
   .player-title{
     font-family:var(--serif); font-style:italic; font-size:19px;
     background:transparent; border:none; color:var(--ink);
-    width:100%; padding:4px 2px; border-radius:2px;
+    width:100%; padding:6px 10px; border-radius:var(--radius-sm);
   }
   .player-title:focus{outline:none; background:var(--bg-2);}
-  video.mainvid{width:100%; max-height:60vh; background:#000; display:block;}
-  .player-body{padding:18px 20px 22px;}
+  video.mainvid{width:100%; max-height:60vh; background:#000; display:block; border-radius:0;}
+  .player-body{padding:20px 22px 24px;}
   .player-tags{display:flex; gap:10px; color:var(--ink-faint); font-size:12px; margin-bottom:14px; font-family:var(--mono);}
 
   /* thumbnail scrubber */
   .thumb-editor{
-    margin-top:6px; border-top:1px solid var(--line); padding-top:16px;
+    margin-top:10px; background:var(--bg-2); border-radius:var(--radius-sm); padding:18px;
   }
   .thumb-editor h3{
     font-family:var(--sans); font-size:11px; text-transform:none; letter-spacing:.03em;
-    color:var(--ink-faint); font-weight:600; margin:0 0 10px;
+    color:var(--ink-faint); font-weight:600; margin:0 0 12px;
   }
   .scrub-row{display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;}
   .scrub-preview{
     width:220px; aspect-ratio:16/9; background:#000; border:1px solid var(--line);
-    border-radius:2px; overflow:hidden; flex-shrink:0;
+    border-radius:var(--radius-sm); overflow:hidden; flex-shrink:0;
   }
   .scrub-preview canvas{width:100%; height:100%; object-fit:cover; display:block;}
   .scrub-controls{flex:1; min-width:220px; display:flex; flex-direction:column; gap:10px;}
@@ -250,38 +271,40 @@
     margin-top:18px; padding-top:16px; border-top:1px solid var(--line);
   }
   .close-x{
-    background:none; border:none; color:var(--ink-faint); font-size:22px; padding:4px 8px; border-radius:3px;
+    background:var(--bg-2); border:1px solid var(--line); color:var(--ink-faint); padding:8px; border-radius:50%;
+    width:36px; height:36px; display:flex; align-items:center; justify-content:center;
   }
-  .close-x:hover{color:var(--ink); border:none;}
+  .close-x:hover{color:var(--ink); border-color:var(--accent-dim);}
 
   /* ---------- JSON / transfer modal ---------- */
   .modal-backdrop{
-    position:fixed; inset:0; background:rgba(8,7,5,.78); z-index:110;
+    position:fixed; inset:0; background:rgba(6,4,16,.8); z-index:110;
     display:none; align-items:center; justify-content:center; padding:30px;
   }
   .modal-backdrop.open{display:flex;}
   .modal{
-    background:var(--bg-1); border:1px solid var(--line); border-radius:4px;
-    width:100%; max-width:620px; padding:24px 26px 26px;
+    background:var(--bg-1); border:1px solid var(--line); border-radius:22px;
+    width:100%; max-width:620px; padding:26px 28px 28px;
+    box-shadow:var(--glow);
   }
   .modal h2{font-family:var(--serif); font-style:italic; font-weight:400; font-size:21px; margin:0 0 6px;}
   .modal p.desc{color:var(--ink-dim); font-size:13px; margin:0 0 18px; line-height:1.5;}
   .modal textarea{
     width:100%; min-height:160px; background:var(--bg); border:1px solid var(--line);
-    color:var(--ink-dim); font-family:var(--mono); font-size:11.5px; padding:12px; border-radius:2px;
+    color:var(--ink-dim); font-family:var(--mono); font-size:11.5px; padding:14px; border-radius:var(--radius-sm);
     resize:vertical;
   }
   .modal-row{display:flex; gap:10px; margin-top:16px; justify-content:flex-end; flex-wrap:wrap;}
   .modal-note{font-size:11.5px; color:var(--ink-faint); margin-top:10px; line-height:1.5;}
-  .tabbar{display:flex; gap:6px; margin-bottom:16px;}
-  .tabbar button{background:transparent; border:1px solid var(--line);}
-  .tabbar button.active{background:var(--accent); color:#181510; border-color:var(--accent);}
+  .tabbar{display:flex; gap:6px; margin-bottom:16px; background:var(--bg-2); padding:4px; border-radius:var(--radius-pill); width:fit-content;}
+  .tabbar button{background:transparent; border:none; border-radius:var(--radius-pill);}
+  .tabbar button.active{background:linear-gradient(135deg, #4a4d52, #2a2c2f); color:#fff; border-color:transparent;}
 
   .toast{
     position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px);
-    background:var(--ink); color:var(--bg); font-size:13px; padding:10px 20px; border-radius:3px;
+    background:var(--bg-1); border:1px solid var(--line); color:var(--ink); font-size:13px; padding:11px 22px; border-radius:var(--radius-pill);
     opacity:0; transition:opacity .2s ease, transform .2s ease; z-index:200; pointer-events:none;
-    font-weight:500;
+    font-weight:500; box-shadow:var(--glow);
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
@@ -298,20 +321,106 @@
   [data-focus-visible-added]{outline:2px solid var(--accent);}
   a.btn, button{ }
   button:focus-visible, .chip:focus-visible, input:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---------- Sync / auth / profile ---------- */
+  .sync-dot{
+    width:7px; height:7px; border-radius:50%; background:var(--ink-faint);
+    flex-shrink:0; transition:background .2s ease;
+  }
+  .sync-dot.live{background:var(--accent-2); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent-2) 25%, transparent);}
+  .sync-dot.syncing{background:var(--accent); animation:pulse 1s ease-in-out infinite;}
+  .sync-dot.off{background:var(--ink-faint);}
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+  .sync-label{font-size:11px; color:var(--ink-faint); font-family:var(--mono); white-space:nowrap;}
+  .sync-chip{display:flex; align-items:center; gap:7px; padding:0 12px; border:1px solid var(--line); border-radius:var(--radius-pill); height:36px; background:var(--bg-2);}
+
+  .profile-chip{
+    display:flex; align-items:center; gap:8px; padding:5px 14px 5px 6px;
+    border:1px solid var(--line); border-radius:var(--radius-pill); cursor:pointer; background:var(--bg-2);
+  }
+  .profile-chip:hover{border-color:var(--accent-dim);}
+  .profile-avatar{
+    width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg, #b8bcc2, #5c6066); color:#0c0d0e;
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;
+    font-family:var(--sans); flex-shrink:0;
+  }
+  .profile-name{font-size:12.5px; color:var(--ink-dim); max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+  /* ---------- Auth screen ---------- */
+  .auth-screen{
+    position:fixed; inset:0; background:var(--bg); z-index:200;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .auth-card{
+    width:100%; max-width:380px; text-align:center;
+  }
+  .auth-card .brand{justify-content:center; margin-bottom:6px; font-size:26px;}
+  .auth-card .tag{color:var(--ink-faint); font-size:13px; margin-bottom:32px;}
+  .auth-form{display:flex; flex-direction:column; gap:10px; text-align:left;}
+  .auth-form label{font-size:11.5px; color:var(--ink-faint); margin-bottom:-5px; letter-spacing:.02em;}
+  .auth-form input{
+    background:var(--bg-2); border:1px solid var(--line); color:var(--ink);
+    padding:12px 16px; border-radius:var(--radius-sm); font-size:14px; font-family:var(--sans);
+  }
+  .auth-form input:focus{outline:none; border-color:var(--accent-dim); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);}
+  .auth-submit{margin-top:8px; justify-content:center; padding:12px;}
+  .auth-toggle{margin-top:18px; font-size:12.5px; color:var(--ink-faint);}
+  .auth-toggle button{border:none; background:none; padding:0; color:var(--accent); font-size:12.5px; font-weight:600;}
+  .auth-toggle button:hover{border:none;}
+  .auth-error{
+    background:color-mix(in srgb, var(--danger) 15%, transparent); border:1px solid var(--danger);
+    color:var(--danger); font-size:12.5px; padding:10px 14px; border-radius:var(--radius-sm); text-align:left; display:none;
+  }
+  .auth-error.show{display:block;}
+  .auth-skip{margin-top:22px; font-size:11.5px;}
+  .auth-skip button{border:none; background:none; color:var(--ink-faint); text-decoration:underline; padding:0; font-size:11.5px;}
+  .auth-skip button:hover{color:var(--ink-dim); border:none;}
+
+  /* ---------- Config panel toggle ---------- */
+  .thumb-editor{ display:none; }
+  .thumb-editor.visible{ display:block; }
+  .config-hint{
+    font-size:11.5px; color:var(--ink-faint); margin-top:6px; padding:14px 16px;
+    background:var(--bg-2); border-radius:var(--radius-sm); display:flex; align-items:center; gap:8px;
+  }
+  .config-hint.hidden-when-open{display:none;}
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="brand"><span class="mark">Reel</span><small>LOCAL LIBRARY</small></div>
+  <div class="brand"><span class="mark">NightClips</span><small>LOCAL LIBRARY</small></div>
   <div class="search">
     <input id="searchInput" type="text" placeholder="Filter by title…" autocomplete="off">
   </div>
   <div class="topbar-actions">
-    <button id="addBtn" class="btn-primary">＋ Add videos</button>
+    <div class="sync-chip" id="syncChip" title="Sync status">
+      <span class="sync-dot off" id="syncDot"></span>
+      <span class="sync-label" id="syncLabel">offline</span>
+    </div>
+
+    <button id="addBtn" class="btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add videos
+    </button>
     <input type="file" id="fileInput" accept="video/*" multiple>
-    <button id="transferBtn" title="Export / import library data">⇅ Transfer</button>
-    <button id="themeBtn" class="btn-icon" title="Toggle theme">◐</button>
+
+    <button id="transferBtn" class="btn-icon" title="Export / import library data">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10L12 5L17 10"/><path d="M12 5V16"/><path d="M4 19H20"/></svg>
+    </button>
+
+    <button id="configBtn" class="btn-icon" title="Toggle config options">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </button>
+
+    <button id="themeBtn" class="btn-icon" title="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" stroke="none"/></svg>
+    </button>
+
+    <div class="profile-chip" id="profileChip" title="Account">
+      <span class="profile-avatar" id="profileAvatar">?</span>
+      <span class="profile-name" id="profileName">Sign in</span>
+    </div>
   </div>
 </div>
 
@@ -335,13 +444,19 @@
       <div class="player-title-row">
         <input class="player-title" id="playerTitle" spellcheck="false">
       </div>
-      <button class="close-x" id="closeBtn">✕</button>
+      <button class="close-x" id="closeBtn">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
     </div>
     <video class="mainvid" id="mainVideo" controls></video>
     <div class="player-body">
       <div class="player-tags" id="playerTags"></div>
 
-      <div class="thumb-editor">
+      <div class="config-hint" id="configHint">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Open Config to edit thumbnails
+      </div>
+      <div class="thumb-editor" id="thumbEditor">
         <h3>Set thumbnail from video frame</h3>
         <div class="scrub-row">
           <div class="scrub-preview"><canvas id="scrubCanvas" width="320" height="180"></canvas></div>
@@ -393,13 +508,57 @@
   </div>
 </div>
 
+<!-- Auth screen -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="brand"><span class="mark">NightClips</span><small>LOCAL LIBRARY</small></div>
+    <div class="tag" id="authTag">Sign in to sync your shared video pack</div>
+    <div class="auth-error" id="authError"></div>
+    <form class="auth-form" id="authForm">
+      <label for="authName" id="authNameLabel" style="display:none;">Display name</label>
+      <input type="text" id="authName" placeholder="Your name" style="display:none;" autocomplete="name">
+      <label for="authEmail">Email</label>
+      <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" required>
+      <label for="authPass">Password</label>
+      <input type="password" id="authPass" placeholder="••••••••" autocomplete="current-password" required>
+      <button type="submit" class="btn-primary auth-submit" id="authSubmitBtn">Sign in</button>
+    </form>
+    <div class="auth-toggle">
+      <span id="authToggleText">Don't have an account?</span> <button id="authToggleBtn">Create one</button>
+    </div>
+    <div class="auth-skip"><button id="authSkipBtn">Continue without an account (local only)</button></div>
+  </div>
+</div>
+
+<!-- Profile modal -->
+<div class="modal-backdrop" id="profileModal">
+  <div class="modal">
+    <h2>Account</h2>
+    <p class="desc" id="profileEmailLine">—</p>
+    <div class="auth-form" style="margin-bottom:4px;">
+      <label for="profileNameInput">Display name</label>
+      <input type="text" id="profileNameInput" placeholder="Your name">
+    </div>
+    <div class="modal-row" style="justify-content:space-between; margin-top:18px;">
+      <button id="signOutBtn" class="btn-danger">Sign out</button>
+      <div style="display:flex; gap:10px;">
+        <button id="closeProfileBtn">Close</button>
+        <button id="saveProfileBtn" class="btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
 <script>
 (function(){
   "use strict";
 
-  const DB_NAME = "reel-video-library";
+  const DB_NAME = "nightclips-library";
   const DB_VERSION = 1;
   const STORE = "videos";
   let db;
@@ -539,7 +698,7 @@
         <div class="thumb-wrap">
           ${thumbUrl ? `<img src="${thumbUrl}" alt="">` : `<span class="thumb-fallback">no thumbnail</span>`}
           <span class="duration">${fmtDuration(rec.duration)}</span>
-          <button class="cardmenu" title="Remove" data-action="delete">✕</button>
+          <button class="cardmenu" title="Remove" data-action="delete"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
         </div>
         <div class="meta">
           <div class="title">${escapeHtml(rec.title)}</div>
@@ -764,13 +923,13 @@
     else document.documentElement.removeAttribute("data-theme");
   }
   let savedTheme = null;
-  try{ savedTheme = localStorage.getItem("reel-theme"); }catch(e){}
+  try{ savedTheme = localStorage.getItem("nightclips-theme"); }catch(e){}
   if(savedTheme) applyTheme(savedTheme);
   themeBtn.addEventListener("click", ()=>{
     const cur = document.documentElement.getAttribute("data-theme");
     const next = cur === "dark" ? "light" : "dark";
     applyTheme(next);
-    try{ localStorage.setItem("reel-theme", next); }catch(e){}
+    try{ localStorage.setItem("nightclips-theme", next); }catch(e){}
   });
 
   // ---------- Transfer (JSON export/import) ----------
@@ -817,7 +976,7 @@
         addedAt: rec.addedAt
       });
     }
-    const payload = { app:"reel-video-library", version:1, exportedAt: Date.now(), items };
+    const payload = { app:"nightclips-library", version:1, exportedAt: Date.now(), items };
     $("#exportArea").value = JSON.stringify(payload, null, 2);
   }
 
@@ -836,10 +995,33 @@
     const blob = new Blob([$("#exportArea").value], {type:"application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "reel-library.json";
+    a.download = "nightclips-library.json";
     a.click();
     setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
   });
+
+  async function applyPack(payload, {silent}={}){
+    if(!payload || !Array.isArray(payload.items)) return {matched:0, unmatched:0, changed:false};
+    let matched = 0, unmatched = 0, changed = false;
+    for(const item of payload.items){
+      const rec = library.find(v => v.filename === item.filename);
+      if(!rec){ unmatched++; continue; }
+      matched++;
+      if(item.title && item.title !== rec.title){ rec.title = item.title; changed = true; }
+      if(item.thumbnail){
+        try{
+          const res = await fetch(item.thumbnail);
+          const blob = await res.blob();
+          rec.thumbBlob = blob;
+          invalidateThumb(rec.id);
+          changed = true;
+        }catch(e){}
+      }
+      await dbPut(rec);
+    }
+    if(changed) renderGrid();
+    return {matched, unmatched, changed};
+  }
 
   $("#doImportBtn").addEventListener("click", async ()=>{
     let payload;
@@ -849,29 +1031,250 @@
       toast("Invalid JSON");
       return;
     }
-    if(!payload || !Array.isArray(payload.items)){
-      toast("Unrecognized format");
-      return;
-    }
-    let matched = 0, unmatched = 0;
-    for(const item of payload.items){
-      const rec = library.find(v => v.filename === item.filename);
-      if(!rec){ unmatched++; continue; }
-      matched++;
-      if(item.title) rec.title = item.title;
-      if(item.thumbnail){
-        try{
-          const res = await fetch(item.thumbnail);
-          const blob = await res.blob();
-          rec.thumbBlob = blob;
-          invalidateThumb(rec.id);
-        }catch(e){}
-      }
-      await dbPut(rec);
-    }
-    renderGrid();
+    const {matched, unmatched} = await applyPack(payload);
     closeTransferModal();
     toast(`Imported: ${matched} matched, ${unmatched} skipped (no matching file)`);
+  });
+
+  // ---------- Config toggle (thumbnail editor visibility) ----------
+  const configBtn = $("#configBtn");
+  const thumbEditor = $("#thumbEditor");
+  const configHint = $("#configHint");
+  let configOpen = false;
+  try{ configOpen = localStorage.getItem("nightclips-config-open") === "1"; }catch(e){}
+  function applyConfigState(){
+    thumbEditor.classList.toggle("visible", configOpen);
+    configHint.classList.toggle("hidden-when-open", configOpen);
+    configBtn.classList.toggle("active", configOpen);
+  }
+  applyConfigState();
+  configBtn.addEventListener("click", ()=>{
+    configOpen = !configOpen;
+    applyConfigState();
+    try{ localStorage.setItem("nightclips-config-open", configOpen ? "1":"0"); }catch(e){}
+  });
+
+  // ================= Firebase: auth, profile, live sync =================
+  const firebaseConfig = {
+    apiKey: "AIzaSyDoZCx_kmQ88Bw2cvOVJ1iWTf0phOjViB4",
+    authDomain: "nightclips-55340.firebaseapp.com",
+    databaseURL: "https://nightclips-55340-default-rtdb.firebaseio.com",
+    projectId: "nightclips-55340",
+    storageBucket: "nightclips-55340.firebasestorage.app",
+    messagingSenderId: "30929726132",
+    appId: "1:30929726132:web:f8dae4fd5feb8b9bad45e1",
+    measurementId: "G-4VSQ50D991"
+  };
+
+  let fbApp = null, fbAuth = null, fbDb = null, currentUser = null;
+  let syncTimer = null;
+  let lastPackStamp = null;
+  const SYNC_INTERVAL_MS = 4000; // poll every ~4s (within the 3-5s ask)
+
+  function setSyncStatus(state, label){
+    const dot = $("#syncDot");
+    dot.className = "sync-dot " + state;
+    $("#syncLabel").textContent = label;
+  }
+
+  function initFirebase(){
+    try{
+      fbApp = firebase.initializeApp(firebaseConfig);
+      fbAuth = firebase.auth();
+      fbDb = firebase.database();
+    }catch(e){
+      console.error("Firebase init failed", e);
+      setSyncStatus("off", "sync unavailable");
+      return false;
+    }
+    return true;
+  }
+
+  function updateProfileChip(){
+    const nameEl = $("#profileName");
+    const avatarEl = $("#profileAvatar");
+    if(currentUser){
+      const label = currentUser.displayName || currentUser.email || "Account";
+      nameEl.textContent = label;
+      avatarEl.textContent = (label[0]||"?").toUpperCase();
+    }else{
+      nameEl.textContent = "Sign in";
+      avatarEl.textContent = "?";
+    }
+  }
+
+  function showAuthScreen(){ $("#authScreen").style.display = "flex"; }
+  function hideAuthScreen(){ $("#authScreen").style.display = "none"; }
+
+  function startSyncLoop(){
+    stopSyncLoop();
+    pollPack(); // immediate
+    syncTimer = setInterval(pollPack, SYNC_INTERVAL_MS);
+  }
+  function stopSyncLoop(){
+    if(syncTimer){ clearInterval(syncTimer); syncTimer = null; }
+  }
+
+  async function pollPack(){
+    if(!fbDb || !currentUser) return;
+    setSyncStatus("syncing", "syncing…");
+    try{
+      const snap = await fbDb.ref("videoPack").get();
+      if(snap.exists()){
+        const payload = snap.val();
+        const stamp = payload && payload.exportedAt;
+        if(stamp && stamp !== lastPackStamp){
+          lastPackStamp = stamp;
+          const {matched} = await applyPack(payload, {silent:true});
+          if(matched>0) toast(`Synced video pack (${matched} updated)`);
+        }
+      }
+      setSyncStatus("live", "live");
+    }catch(e){
+      console.error("sync error", e);
+      setSyncStatus("off", "sync error");
+    }
+  }
+
+  // push current library as the shared pack (any signed-in user can trigger;
+  // write is restricted by DB rules to the admin account)
+  async function pushPack(){
+    if(!fbDb || !currentUser){ toast("Sign in to publish a pack"); return; }
+    try{
+      const items = [];
+      for(const rec of library){
+        let thumb = null;
+        if(rec.thumbBlob) thumb = await blobToBase64(rec.thumbBlob);
+        items.push({ filename: rec.filename, title: rec.title, duration: rec.duration, thumbnail: thumb, addedAt: rec.addedAt });
+      }
+      const payload = { app:"nightclips-library", version:1, exportedAt: Date.now(), publishedBy: currentUser.email, items };
+      await fbDb.ref("videoPack").set(payload);
+      toast("Published pack to all devices");
+    }catch(e){
+      console.error(e);
+      toast("Publish failed — check permissions");
+    }
+  }
+
+  function saveProfile(uid, data){
+    if(!fbDb) return Promise.resolve();
+    return fbDb.ref("profiles/"+uid).set(data);
+  }
+
+  // ---------- Auth screen wiring ----------
+  let authMode = "signin"; // or "signup"
+  const authForm = $("#authForm");
+  const authError = $("#authError");
+  const authNameRow = $("#authName");
+
+  function setAuthMode(mode){
+    authMode = mode;
+    authError.classList.remove("show");
+    if(mode === "signup"){
+      $("#authNameLabel").style.display = "";
+      authNameRow.style.display = "";
+      $("#authSubmitBtn").textContent = "Create account";
+      $("#authTag").textContent = "Create an account to sync your shared video pack";
+      $("#authToggleText").textContent = "Already have an account?";
+      $("#authToggleBtn").textContent = "Sign in";
+    }else{
+      $("#authNameLabel").style.display = "none";
+      authNameRow.style.display = "none";
+      $("#authSubmitBtn").textContent = "Sign in";
+      $("#authTag").textContent = "Sign in to sync your shared video pack";
+      $("#authToggleText").textContent = "Don't have an account?";
+      $("#authToggleBtn").textContent = "Create one";
+    }
+  }
+  $("#authToggleBtn").addEventListener("click", ()=> setAuthMode(authMode === "signin" ? "signup" : "signin"));
+
+  authForm.addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    authError.classList.remove("show");
+    const email = $("#authEmail").value.trim();
+    const pass = $("#authPass").value;
+    const name = $("#authName").value.trim();
+    if(!fbAuth){ authError.textContent = "Sync isn't available right now."; authError.classList.add("show"); return; }
+    try{
+      if(authMode === "signup"){
+        const cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
+        if(name) await cred.user.updateProfile({displayName:name});
+        await saveProfile(cred.user.uid, {email, displayName:name||"", createdAt:Date.now()});
+      }else{
+        await fbAuth.signInWithEmailAndPassword(email, pass);
+      }
+    }catch(err){
+      authError.textContent = friendlyAuthError(err);
+      authError.classList.add("show");
+    }
+  });
+
+  function friendlyAuthError(err){
+    const code = err && err.code || "";
+    if(code.includes("wrong-password") || code.includes("invalid-credential")) return "Incorrect email or password.";
+    if(code.includes("user-not-found")) return "No account found with that email.";
+    if(code.includes("email-already-in-use")) return "That email already has an account — try signing in.";
+    if(code.includes("weak-password")) return "Password should be at least 6 characters.";
+    if(code.includes("invalid-email")) return "That email address doesn't look right.";
+    return err && err.message ? err.message : "Something went wrong. Please try again.";
+  }
+
+  $("#authSkipBtn").addEventListener("click", ()=>{
+    hideAuthScreen();
+    setSyncStatus("off", "local only");
+  });
+
+  // ---------- Profile modal ----------
+  const profileModal = $("#profileModal");
+  $("#profileChip").addEventListener("click", ()=>{
+    if(!currentUser){ showAuthScreen(); return; }
+    $("#profileEmailLine").textContent = currentUser.email || "";
+    $("#profileNameInput").value = currentUser.displayName || "";
+    profileModal.classList.add("open");
+  });
+  $("#closeProfileBtn").addEventListener("click", ()=> profileModal.classList.remove("open"));
+  profileModal.addEventListener("click", e=>{ if(e.target===profileModal) profileModal.classList.remove("open"); });
+  $("#saveProfileBtn").addEventListener("click", async ()=>{
+    if(!currentUser) return;
+    const name = $("#profileNameInput").value.trim();
+    try{
+      await currentUser.updateProfile({displayName:name});
+      await saveProfile(currentUser.uid, {email:currentUser.email, displayName:name, updatedAt:Date.now()});
+      updateProfileChip();
+      profileModal.classList.remove("open");
+      toast("Profile saved");
+    }catch(e){
+      toast("Couldn't save profile");
+    }
+  });
+  $("#signOutBtn").addEventListener("click", async ()=>{
+    profileModal.classList.remove("open");
+    if(fbAuth) await fbAuth.signOut();
+  });
+
+  function onAuthChanged(user){
+    currentUser = user;
+    updateProfileChip();
+    if(user){
+      hideAuthScreen();
+      startSyncLoop();
+    }else{
+      stopSyncLoop();
+      lastPackStamp = null;
+      setSyncStatus("off", "signed out");
+      showAuthScreen();
+      setAuthMode("signin");
+    }
+  }
+
+  // Offer a "publish pack" action from the transfer modal for signed-in users
+  const publishRow = document.createElement("div");
+  publishRow.className = "modal-note";
+  publishRow.style.marginTop = "14px";
+  publishRow.innerHTML = `<button id="publishPackBtn" style="width:100%; justify-content:center;">⇪ Publish this library as the shared pack for all devices</button>`;
+  $("#exportPane").appendChild(publishRow);
+  document.addEventListener("click", (e)=>{
+    if(e.target && e.target.id === "publishPackBtn") pushPack();
   });
 
   // ---------- Boot ----------
@@ -879,6 +1282,13 @@
     await openDB();
     library = await dbGetAll();
     renderGrid();
+
+    if(initFirebase()){
+      fbAuth.onAuthStateChanged(onAuthChanged);
+      showAuthScreen(); // default until auth state resolves; onAuthChanged will hide if signed in
+    }else{
+      hideAuthScreen();
+    }
   })();
 
 })();
