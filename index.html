@@ -313,9 +313,69 @@
   ::-webkit-scrollbar-thumb{background:var(--line); border-radius:5px;}
 
   @media (max-width:700px){
-    .topbar{padding:14px 16px; flex-wrap:wrap;}
+    .topbar{
+      padding:12px 14px; margin:10px 10px 0; gap:10px;
+      flex-wrap:wrap; border-radius:var(--radius-sm);
+    }
+    .brand{font-size:19px; gap:6px;}
+    .brand small{display:none;}
     .search{order:3; max-width:none; flex-basis:100%;}
-    .shell{padding:0 16px 60px;}
+    .topbar-actions{
+      margin-left:0; flex-wrap:wrap; gap:8px; width:100%;
+      order:4; justify-content:space-between;
+    }
+    .sync-chip{height:32px; padding:0 10px;}
+    .sync-label{display:none;}
+    #addBtn{flex:1; justify-content:center; padding:10px 12px;}
+    .btn-icon{width:34px; height:34px;}
+    .profile-chip{padding:4px 10px 4px 4px;}
+    .profile-name{max-width:70px;}
+
+    .shell{padding:0 12px 50px;}
+    .stagebar{padding:20px 2px 14px; gap:10px;}
+    .stagebar h1{font-size:23px;}
+    .stagebar .count{display:block; margin-left:0; font-size:12px; margin-top:2px;}
+    .filters{width:100%; overflow-x:auto; flex-wrap:nowrap; padding-bottom:2px;}
+    .chip{flex-shrink:0;}
+
+    .grid{grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:14px 10px;}
+    .card .meta{padding:10px 11px 12px;}
+    .card .title{font-size:12.5px;}
+    .card .sub{font-size:10.5px;}
+
+    .overlay{padding:0;}
+    .player-panel{
+      max-width:100%; max-height:100%; height:100%; width:100%;
+      border-radius:0; border:none;
+    }
+    .player-head{padding:14px 16px;}
+    .player-title{font-size:16px; padding:5px 8px;}
+    video.mainvid{max-height:38vh;}
+    .player-body{padding:16px 16px 20px;}
+    .scrub-row{flex-direction:column;}
+    .scrub-preview{width:100%;}
+    .player-footer{flex-direction:column-reverse; align-items:stretch; gap:10px;}
+    .player-footer button{width:100%; justify-content:center;}
+
+    .modal-backdrop{padding:0; align-items:flex-end;}
+    .modal{
+      max-width:100%; border-radius:var(--radius) var(--radius) 0 0;
+      max-height:90vh; overflow-y:auto; padding:20px 18px 22px;
+    }
+    .modal-row{flex-direction:column-reverse;}
+    .modal-row button{width:100%; justify-content:center;}
+
+    .auth-card{max-width:320px;}
+    .toast{
+      left:12px; right:12px; transform:translateY(20px); text-align:center;
+      bottom:16px;
+    }
+    .toast.show{transform:translateY(0);}
+  }
+
+  @media (max-width:420px){
+    .grid{grid-template-columns:repeat(auto-fill, minmax(130px,1fr)); gap:12px 8px;}
+    .stagebar h1{font-size:20px;}
   }
 
   [data-focus-visible-added]{outline:2px solid var(--accent);}
@@ -384,6 +444,23 @@
     background:var(--bg-2); border-radius:var(--radius-sm); display:flex; align-items:center; gap:8px;
   }
   .config-hint.hidden-when-open{display:none;}
+
+  /* ---------- Profile picture ---------- */
+  .profile-pic-row{
+    display:flex; align-items:center; gap:16px; margin-bottom:20px;
+    padding-bottom:18px; border-bottom:1px solid var(--line);
+  }
+  .profile-pic-preview{
+    width:64px; height:64px; border-radius:50%; flex-shrink:0;
+    background:linear-gradient(135deg, #b8bcc2, #5c6066); color:#0c0d0e;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; font-weight:700; overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .profile-pic-preview img{width:100%; height:100%; object-fit:cover; display:block;}
+  .profile-pic-actions{display:flex; gap:8px; flex-wrap:wrap;}
+  #profilePicInput{display:none;}
+  .profile-avatar img{width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;}
 </style>
 </head>
 <body>
@@ -535,6 +612,16 @@
   <div class="modal">
     <h2>Account</h2>
     <p class="desc" id="profileEmailLine">—</p>
+
+    <div class="profile-pic-row">
+      <div class="profile-pic-preview" id="profilePicPreview">?</div>
+      <div class="profile-pic-actions">
+        <button id="choosePicBtn">Change photo</button>
+        <button id="removePicBtn" class="btn-danger">Remove</button>
+        <input type="file" id="profilePicInput" accept="image/*">
+      </div>
+    </div>
+
     <div class="auth-form" style="margin-bottom:4px;">
       <label for="profileNameInput">Display name</label>
       <input type="text" id="profileNameInput" placeholder="Your name">
@@ -1090,16 +1177,23 @@
     return true;
   }
 
+  let currentPhotoDataUrl = null; // base64 data URL, cached locally + in Firebase profile
+
   function updateProfileChip(){
     const nameEl = $("#profileName");
     const avatarEl = $("#profileAvatar");
     if(currentUser){
       const label = currentUser.displayName || currentUser.email || "Account";
       nameEl.textContent = label;
-      avatarEl.textContent = (label[0]||"?").toUpperCase();
+      if(currentPhotoDataUrl){
+        avatarEl.innerHTML = `<img src="${currentPhotoDataUrl}" alt="">`;
+      }else{
+        avatarEl.textContent = (label[0]||"?").toUpperCase();
+      }
     }else{
       nameEl.textContent = "Sign in";
       avatarEl.textContent = "?";
+      avatarEl.innerHTML = "?";
     }
   }
 
@@ -1226,20 +1320,91 @@
 
   // ---------- Profile modal ----------
   const profileModal = $("#profileModal");
+
+  function resizeImageToDataUrl(file, maxSize){
+    return new Promise((resolve,reject)=>{
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = ()=>{ img.src = reader.result; };
+      reader.onerror = reject;
+      img.onload = ()=>{
+        const side = Math.min(img.naturalWidth, img.naturalHeight);
+        const sx = (img.naturalWidth - side) / 2;
+        const sy = (img.naturalHeight - side) / 2;
+        const outSize = Math.min(maxSize, side);
+        const canvas = document.createElement("canvas");
+        canvas.width = outSize; canvas.height = outSize;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, outSize, outSize);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderProfilePicPreview(){
+    const el = $("#profilePicPreview");
+    if(currentPhotoDataUrl){
+      el.innerHTML = `<img src="${currentPhotoDataUrl}" alt="">`;
+    }else{
+      const label = (currentUser && (currentUser.displayName||currentUser.email)) || "?";
+      el.textContent = (label[0]||"?").toUpperCase();
+    }
+  }
+
   $("#profileChip").addEventListener("click", ()=>{
     if(!currentUser){ showAuthScreen(); return; }
     $("#profileEmailLine").textContent = currentUser.email || "";
     $("#profileNameInput").value = currentUser.displayName || "";
+    renderProfilePicPreview();
     profileModal.classList.add("open");
   });
   $("#closeProfileBtn").addEventListener("click", ()=> profileModal.classList.remove("open"));
   profileModal.addEventListener("click", e=>{ if(e.target===profileModal) profileModal.classList.remove("open"); });
+
+  $("#choosePicBtn").addEventListener("click", ()=> $("#profilePicInput").click());
+  $("#profilePicInput").addEventListener("change", async (e)=>{
+    const file = e.target.files[0];
+    e.target.value = "";
+    if(!file) return;
+    if(!file.type.startsWith("image/")){ toast("Please choose an image file"); return; }
+    try{
+      const dataUrl = await resizeImageToDataUrl(file, 160);
+      currentPhotoDataUrl = dataUrl;
+      renderProfilePicPreview();
+      updateProfileChip();
+      toast("Photo updated — click Save to keep it");
+    }catch(err){
+      toast("Couldn't process that image");
+    }
+  });
+  $("#removePicBtn").addEventListener("click", ()=>{
+    currentPhotoDataUrl = null;
+    renderProfilePicPreview();
+    updateProfileChip();
+  });
+
+  function cachePhotoLocally(uid, dataUrl){
+    try{
+      if(dataUrl) localStorage.setItem("nightclips-photo-"+uid, dataUrl);
+      else localStorage.removeItem("nightclips-photo-"+uid);
+    }catch(e){}
+  }
+  function loadCachedPhoto(uid){
+    try{ return localStorage.getItem("nightclips-photo-"+uid); }catch(e){ return null; }
+  }
+
   $("#saveProfileBtn").addEventListener("click", async ()=>{
     if(!currentUser) return;
     const name = $("#profileNameInput").value.trim();
     try{
       await currentUser.updateProfile({displayName:name});
-      await saveProfile(currentUser.uid, {email:currentUser.email, displayName:name, updatedAt:Date.now()});
+      await saveProfile(currentUser.uid, {
+        email:currentUser.email, displayName:name,
+        photoURL: currentPhotoDataUrl || null, updatedAt:Date.now()
+      });
+      cachePhotoLocally(currentUser.uid, currentPhotoDataUrl);
       updateProfileChip();
       profileModal.classList.remove("open");
       toast("Profile saved");
@@ -1252,12 +1417,32 @@
     if(fbAuth) await fbAuth.signOut();
   });
 
+  async function loadProfilePhoto(uid){
+    // try local cache first for instant paint, then reconcile with Firebase
+    currentPhotoDataUrl = loadCachedPhoto(uid);
+    updateProfileChip();
+    if(!fbDb) return;
+    try{
+      const snap = await fbDb.ref("profiles/"+uid+"/photoURL").get();
+      if(snap.exists()){
+        const remote = snap.val();
+        if(remote !== currentPhotoDataUrl){
+          currentPhotoDataUrl = remote;
+          cachePhotoLocally(uid, remote);
+          updateProfileChip();
+        }
+      }
+    }catch(e){ /* rules may not allow read of another path shape; ignore */ }
+  }
+
   function onAuthChanged(user){
     currentUser = user;
+    currentPhotoDataUrl = null;
     updateProfileChip();
     if(user){
       hideAuthScreen();
       startSyncLoop();
+      loadProfilePhoto(user.uid);
     }else{
       stopSyncLoop();
       lastPackStamp = null;
