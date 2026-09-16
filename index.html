@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reel — local video library</title>
+<style>
+  :root{
+    --ink:#eae7df;
+    --ink-dim:#9c988d;
+    --ink-faint:#6b675e;
+    --bg:#141310;
+    --bg-1:#1b1a16;
+    --bg-2:#232019;
+    --line:#332f26;
+    --accent:#e8ab3a;
+    --accent-dim:#8a6a24;
+    --danger:#c1543d;
+    --radius:3px;
+    --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+    --sans:"Neue Haas Grotesk","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"JetBrains Mono","SF Mono",Consolas,monospace;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --ink:#211f1a; --ink-dim:#5c584c; --ink-faint:#8a8578;
+      --bg:#f2ede0; --bg-1:#e9e2d0; --bg-2:#ded5bd; --line:#cdc3a7;
+      --accent:#a9631a; --accent-dim:#c98a3b;
+    }
+  }
+  :root[data-theme="light"]{
+    --ink:#211f1a; --ink-dim:#5c584c; --ink-faint:#8a8578;
+    --bg:#f2ede0; --bg-1:#e9e2d0; --bg-2:#ded5bd; --line:#cdc3a7;
+    --accent:#a9631a; --accent-dim:#c98a3b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent);color:#141310;}
+  a{color:inherit;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    display:flex; align-items:center; gap:24px;
+    padding:18px 28px;
+    background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{
+    font-family:var(--serif);
+    font-size:22px; letter-spacing:.01em;
+    display:flex; align-items:baseline; gap:8px;
+    white-space:nowrap;
+  }
+  .brand .mark{color:var(--accent); font-style:italic;}
+  .brand small{font-family:var(--sans); font-size:11px; color:var(--ink-faint); font-weight:500; letter-spacing:.04em;}
+
+  .search{
+    flex:1; max-width:420px;
+    position:relative;
+  }
+  .search input{
+    width:100%;
+    background:var(--bg-1);
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:9px 14px 9px 32px;
+    border-radius:var(--radius);
+    font-size:13.5px;
+    font-family:var(--sans);
+  }
+  .search input:focus{outline:none;border-color:var(--accent-dim);}
+  .search::before{
+    content:"";
+    position:absolute; left:11px; top:50%; transform:translateY(-50%);
+    width:12px; height:12px;
+    border:1.4px solid var(--ink-faint);
+    border-radius:50%;
+  }
+  .search::after{
+    content:"";
+    position:absolute; left:19px; top:63%;
+    width:6px; height:1.4px;
+    background:var(--ink-faint);
+    transform:rotate(45deg);
+  }
+
+  .topbar-actions{display:flex; gap:10px; margin-left:auto; align-items:center;}
+
+  button, .btn{
+    font-family:var(--sans);
+    cursor:pointer;
+    border-radius:var(--radius);
+    border:1px solid var(--line);
+    background:var(--bg-1);
+    color:var(--ink);
+    padding:9px 16px;
+    font-size:13px;
+    font-weight:500;
+    letter-spacing:.01em;
+    transition:border-color .15s ease, background .15s ease, color .15s ease;
+    display:inline-flex; align-items:center; gap:7px;
+  }
+  button:hover, .btn:hover{border-color:var(--accent-dim); color:var(--ink);}
+  button:active{transform:translateY(1px);}
+  .btn-primary{
+    background:var(--accent); color:#181510; border-color:var(--accent); font-weight:600;
+  }
+  .btn-primary:hover{background:var(--accent-dim); border-color:var(--accent-dim); color:#181510;}
+  .btn-icon{padding:9px; width:36px; height:36px; justify-content:center;}
+  .btn-danger:hover{border-color:var(--danger); color:var(--danger);}
+
+  input[type=file]{display:none;}
+
+  /* ---------- Layout ---------- */
+  .shell{max-width:1320px; margin:0 auto; padding:0 28px 80px;}
+
+  .stagebar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:26px 0 18px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:26px;
+    gap:16px; flex-wrap:wrap;
+  }
+  .stagebar h1{
+    font-family:var(--serif); font-weight:400; font-style:italic;
+    font-size:28px; margin:0; color:var(--ink);
+  }
+  .stagebar .count{color:var(--ink-faint); font-size:13px; margin-left:10px; font-style:normal; font-family:var(--sans);}
+
+  .filters{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{
+    padding:6px 13px; border:1px solid var(--line); border-radius:20px;
+    font-size:12.5px; color:var(--ink-dim); cursor:pointer; background:transparent;
+    display:inline-flex; align-items:center; gap:0;
+  }
+  .chip.active{border-color:var(--accent); color:var(--accent); background:color-mix(in srgb, var(--accent) 12%, transparent);}
+
+  /* ---------- Grid ---------- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(240px,1fr));
+    gap:22px 20px;
+  }
+  .card{
+    background:var(--bg-1);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    cursor:pointer;
+    position:relative;
+    transition:border-color .15s ease;
+  }
+  .card:hover{border-color:var(--accent-dim);}
+  .card .thumb-wrap{
+    aspect-ratio:16/9; background:var(--bg-2); position:relative; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .card .thumb-wrap img{width:100%; height:100%; object-fit:cover; display:block;}
+  .card .thumb-fallback{
+    color:var(--ink-faint); font-family:var(--serif); font-style:italic; font-size:14px;
+  }
+  .card .duration{
+    position:absolute; right:7px; bottom:7px;
+    background:rgba(10,9,7,.78); color:#eee;
+    font-family:var(--mono); font-size:10.5px;
+    padding:2px 6px; border-radius:2px; letter-spacing:.02em;
+  }
+  .card .meta{padding:12px 13px 14px;}
+  .card .title{
+    font-size:13.5px; font-weight:500; color:var(--ink);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:4px;
+  }
+  .card .sub{font-size:11.5px; color:var(--ink-faint); display:flex; gap:8px;}
+  .card .cardmenu{
+    position:absolute; top:7px; right:7px;
+    width:26px; height:26px; border-radius:50%;
+    background:rgba(10,9,7,.55); color:#eee; border:none;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; transition:opacity .12s ease;
+    font-size:16px; padding:0;
+  }
+  .card:hover .cardmenu{opacity:1;}
+
+  .empty{
+    text-align:center; padding:110px 20px; color:var(--ink-faint);
+  }
+  .empty .big{font-family:var(--serif); font-style:italic; font-size:26px; color:var(--ink-dim); margin-bottom:10px;}
+  .empty p{font-size:13.5px; max-width:360px; margin:0 auto 20px;}
+
+  /* ---------- Player overlay ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(8,7,5,.82);
+    backdrop-filter:blur(4px);
+    z-index:100; display:none;
+    align-items:center; justify-content:center;
+    padding:30px;
+  }
+  .overlay.open{display:flex;}
+  .player-panel{
+    background:var(--bg-1); border:1px solid var(--line); border-radius:4px;
+    width:100%; max-width:980px; max-height:92vh; overflow:auto;
+    display:flex; flex-direction:column;
+  }
+  .player-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; border-bottom:1px solid var(--line);
+  }
+  .player-title-row{display:flex; align-items:center; gap:10px; flex:1; min-width:0;}
+  .player-title{
+    font-family:var(--serif); font-style:italic; font-size:19px;
+    background:transparent; border:none; color:var(--ink);
+    width:100%; padding:4px 2px; border-radius:2px;
+  }
+  .player-title:focus{outline:none; background:var(--bg-2);}
+  video.mainvid{width:100%; max-height:60vh; background:#000; display:block;}
+  .player-body{padding:18px 20px 22px;}
+  .player-tags{display:flex; gap:10px; color:var(--ink-faint); font-size:12px; margin-bottom:14px; font-family:var(--mono);}
+
+  /* thumbnail scrubber */
+  .thumb-editor{
+    margin-top:6px; border-top:1px solid var(--line); padding-top:16px;
+  }
+  .thumb-editor h3{
+    font-family:var(--sans); font-size:11px; text-transform:none; letter-spacing:.03em;
+    color:var(--ink-faint); font-weight:600; margin:0 0 10px;
+  }
+  .scrub-row{display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;}
+  .scrub-preview{
+    width:220px; aspect-ratio:16/9; background:#000; border:1px solid var(--line);
+    border-radius:2px; overflow:hidden; flex-shrink:0;
+  }
+  .scrub-preview canvas{width:100%; height:100%; object-fit:cover; display:block;}
+  .scrub-controls{flex:1; min-width:220px; display:flex; flex-direction:column; gap:10px;}
+  .scrub-controls input[type=range]{
+    width:100%; accent-color:var(--accent);
+  }
+  .scrub-time{font-family:var(--mono); font-size:12px; color:var(--ink-dim);}
+  .scrub-actions{display:flex; gap:10px;}
+
+  .player-footer{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top:18px; padding-top:16px; border-top:1px solid var(--line);
+  }
+  .close-x{
+    background:none; border:none; color:var(--ink-faint); font-size:22px; padding:4px 8px; border-radius:3px;
+  }
+  .close-x:hover{color:var(--ink); border:none;}
+
+  /* ---------- JSON / transfer modal ---------- */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(8,7,5,.78); z-index:110;
+    display:none; align-items:center; justify-content:center; padding:30px;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:var(--bg-1); border:1px solid var(--line); border-radius:4px;
+    width:100%; max-width:620px; padding:24px 26px 26px;
+  }
+  .modal h2{font-family:var(--serif); font-style:italic; font-weight:400; font-size:21px; margin:0 0 6px;}
+  .modal p.desc{color:var(--ink-dim); font-size:13px; margin:0 0 18px; line-height:1.5;}
+  .modal textarea{
+    width:100%; min-height:160px; background:var(--bg); border:1px solid var(--line);
+    color:var(--ink-dim); font-family:var(--mono); font-size:11.5px; padding:12px; border-radius:2px;
+    resize:vertical;
+  }
+  .modal-row{display:flex; gap:10px; margin-top:16px; justify-content:flex-end; flex-wrap:wrap;}
+  .modal-note{font-size:11.5px; color:var(--ink-faint); margin-top:10px; line-height:1.5;}
+  .tabbar{display:flex; gap:6px; margin-bottom:16px;}
+  .tabbar button{background:transparent; border:1px solid var(--line);}
+  .tabbar button.active{background:var(--accent); color:#181510; border-color:var(--accent);}
+
+  .toast{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:var(--bg); font-size:13px; padding:10px 20px; border-radius:3px;
+    opacity:0; transition:opacity .2s ease, transform .2s ease; z-index:200; pointer-events:none;
+    font-weight:500;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:5px;}
+
+  @media (max-width:700px){
+    .topbar{padding:14px 16px; flex-wrap:wrap;}
+    .search{order:3; max-width:none; flex-basis:100%;}
+    .shell{padding:0 16px 60px;}
+  }
+
+  [data-focus-visible-added]{outline:2px solid var(--accent);}
+  a.btn, button{ }
+  button:focus-visible, .chip:focus-visible, input:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="mark">Reel</span><small>LOCAL LIBRARY</small></div>
+  <div class="search">
+    <input id="searchInput" type="text" placeholder="Filter by title…" autocomplete="off">
+  </div>
+  <div class="topbar-actions">
+    <button id="addBtn" class="btn-primary">＋ Add videos</button>
+    <input type="file" id="fileInput" accept="video/*" multiple>
+    <button id="transferBtn" title="Export / import library data">⇅ Transfer</button>
+    <button id="themeBtn" class="btn-icon" title="Toggle theme">◐</button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="stagebar">
+    <h1>Your library <span class="count" id="countLabel">0 videos</span></h1>
+    <div class="filters" id="sortFilters">
+      <span class="chip active" data-sort="added">Recently added</span>
+      <span class="chip" data-sort="title">Title A–Z</span>
+      <span class="chip" data-sort="duration">Duration</span>
+    </div>
+  </div>
+
+  <div id="gridWrap"></div>
+</div>
+
+<!-- Player overlay -->
+<div class="overlay" id="overlay">
+  <div class="player-panel">
+    <div class="player-head">
+      <div class="player-title-row">
+        <input class="player-title" id="playerTitle" spellcheck="false">
+      </div>
+      <button class="close-x" id="closeBtn">✕</button>
+    </div>
+    <video class="mainvid" id="mainVideo" controls></video>
+    <div class="player-body">
+      <div class="player-tags" id="playerTags"></div>
+
+      <div class="thumb-editor">
+        <h3>Set thumbnail from video frame</h3>
+        <div class="scrub-row">
+          <div class="scrub-preview"><canvas id="scrubCanvas" width="320" height="180"></canvas></div>
+          <div class="scrub-controls">
+            <input type="range" id="scrubSlider" min="0" max="100" value="0" step="0.1">
+            <div class="scrub-time" id="scrubTime">0:00</div>
+            <div class="scrub-actions">
+              <button id="captureBtn" class="btn-primary">Use this frame</button>
+              <button id="resetThumbBtn">Clear thumbnail</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="player-footer">
+        <button id="renameSaveHint" style="border:none;background:none;color:var(--ink-faint);font-size:12px;padding:0;cursor:default;">Renaming saves automatically</button>
+        <button id="deleteBtn" class="btn-danger">Remove from library</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Transfer modal -->
+<div class="modal-backdrop" id="transferModal">
+  <div class="modal">
+    <h2>Transfer library</h2>
+    <p class="desc">Copy your library's metadata (titles, thumbnails, durations) as JSON to move it to another device. Note: this does not include the actual video files — you'll need to re-add those files by their original filename on the other device, or just use this to back up your titles and custom thumbnails.</p>
+    <div class="tabbar">
+      <button class="active" id="tabExport">Export</button>
+      <button id="tabImport">Import</button>
+    </div>
+    <div id="exportPane">
+      <textarea id="exportArea" readonly></textarea>
+      <div class="modal-row">
+        <button id="copyJsonBtn" class="btn-primary">Copy JSON</button>
+        <button id="downloadJsonBtn">Download .json</button>
+      </div>
+    </div>
+    <div id="importPane" style="display:none;">
+      <textarea id="importArea" placeholder="Paste JSON here…"></textarea>
+      <div class="modal-note">Importing matches videos by filename. Add the matching video files first (Add videos), then import to restore titles/thumbnails/order onto them.</div>
+      <div class="modal-row">
+        <button id="doImportBtn" class="btn-primary">Import</button>
+      </div>
+    </div>
+    <div class="modal-row" style="justify-content:flex-start; margin-top:4px;">
+      <button id="closeTransfer" style="border:none;background:none;color:var(--ink-faint);">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const DB_NAME = "reel-video-library";
+  const DB_VERSION = 1;
+  const STORE = "videos";
+  let db;
+
+  function openDB(){
+    return new Promise((resolve,reject)=>{
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = (e)=>{
+        const d = e.target.result;
+        if(!d.objectStoreNames.contains(STORE)){
+          const store = d.createObjectStore(STORE, {keyPath:"id"});
+          store.createIndex("addedAt","addedAt");
+        }
+      };
+      req.onsuccess = ()=>{ db = req.result; resolve(db); };
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+
+  function txStore(mode){
+    return db.transaction(STORE, mode).objectStore(STORE);
+  }
+  function dbGetAll(){
+    return new Promise((resolve,reject)=>{
+      const req = txStore("readonly").getAll();
+      req.onsuccess = ()=>resolve(req.result);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+  function dbPut(rec){
+    return new Promise((resolve,reject)=>{
+      const req = txStore("readwrite").put(rec);
+      req.onsuccess = ()=>resolve();
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+  function dbDelete(id){
+    return new Promise((resolve,reject)=>{
+      const req = txStore("readwrite").delete(id);
+      req.onsuccess = ()=>resolve();
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+
+  let library = []; // {id, title, filename, blob, thumbBlob, duration, addedAt, size}
+  let currentSort = "added";
+  let activeId = null;
+  let objectUrls = new Map(); // id -> blob url (video)
+  let thumbUrls = new Map();  // id -> blob url (thumb)
+
+  const $ = sel => document.querySelector(sel);
+  const gridWrap = $("#gridWrap");
+  const countLabel = $("#countLabel");
+  const toastEl = $("#toast");
+
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>toastEl.classList.remove("show"), 2200);
+  }
+
+  function fmtDuration(s){
+    if(!s || isNaN(s)) return "--:--";
+    s = Math.round(s);
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    if(h>0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    return `${m}:${String(sec).padStart(2,'0')}`;
+  }
+  function fmtSize(bytes){
+    if(!bytes) return "";
+    const mb = bytes/1048576;
+    if(mb > 1024) return (mb/1024).toFixed(1)+" GB";
+    return mb.toFixed(0)+" MB";
+  }
+  function timeAgo(ts){
+    const diff = Date.now() - ts;
+    const day = 86400000;
+    if(diff < 3600000) return Math.max(1,Math.round(diff/60000))+"m ago";
+    if(diff < day) return Math.round(diff/3600000)+"h ago";
+    if(diff < day*30) return Math.round(diff/day)+"d ago";
+    return new Date(ts).toLocaleDateString();
+  }
+
+  function getVideoUrl(rec){
+    if(!objectUrls.has(rec.id)){
+      objectUrls.set(rec.id, URL.createObjectURL(rec.blob));
+    }
+    return objectUrls.get(rec.id);
+  }
+  function getThumbUrl(rec){
+    if(!rec.thumbBlob) return null;
+    if(!thumbUrls.has(rec.id)){
+      thumbUrls.set(rec.id, URL.createObjectURL(rec.thumbBlob));
+    }
+    return thumbUrls.get(rec.id);
+  }
+  function invalidateThumb(id){
+    if(thumbUrls.has(id)){
+      URL.revokeObjectURL(thumbUrls.get(id));
+      thumbUrls.delete(id);
+    }
+  }
+
+  function renderGrid(){
+    const q = $("#searchInput").value.trim().toLowerCase();
+    let list = library.filter(v => v.title.toLowerCase().includes(q));
+
+    if(currentSort === "title") list.sort((a,b)=>a.title.localeCompare(b.title));
+    else if(currentSort === "duration") list.sort((a,b)=>(b.duration||0)-(a.duration||0));
+    else list.sort((a,b)=>b.addedAt-a.addedAt);
+
+    countLabel.textContent = `${library.length} video${library.length===1?'':'s'}`;
+
+    if(library.length === 0){
+      gridWrap.innerHTML = `
+        <div class="empty">
+          <div class="big">Nothing here yet</div>
+          <p>Add video files from this device. They're stored locally in your browser — nothing is uploaded anywhere.</p>
+          <button class="btn-primary" onclick="document.getElementById('fileInput').click()">＋ Add videos</button>
+        </div>`;
+      return;
+    }
+    if(list.length === 0){
+      gridWrap.innerHTML = `<div class="empty"><div class="big">No matches</div><p>Try a different search term.</p></div>`;
+      return;
+    }
+
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    list.forEach(rec=>{
+      const card = document.createElement("div");
+      card.className = "card";
+      card.dataset.id = rec.id;
+      const thumbUrl = getThumbUrl(rec);
+      card.innerHTML = `
+        <div class="thumb-wrap">
+          ${thumbUrl ? `<img src="${thumbUrl}" alt="">` : `<span class="thumb-fallback">no thumbnail</span>`}
+          <span class="duration">${fmtDuration(rec.duration)}</span>
+          <button class="cardmenu" title="Remove" data-action="delete">✕</button>
+        </div>
+        <div class="meta">
+          <div class="title">${escapeHtml(rec.title)}</div>
+          <div class="sub"><span>${fmtSize(rec.size)}</span><span>·</span><span>${timeAgo(rec.addedAt)}</span></div>
+        </div>
+      `;
+      card.addEventListener("click", (e)=>{
+        if(e.target.closest('[data-action="delete"]')){
+          e.stopPropagation();
+          removeVideo(rec.id);
+          return;
+        }
+        openPlayer(rec.id);
+      });
+      grid.appendChild(card);
+    });
+    gridWrap.innerHTML = "";
+    gridWrap.appendChild(grid);
+  }
+
+  function escapeHtml(s){
+    const d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  async function removeVideo(id){
+    if(!confirm("Remove this video from your library? The file itself on your computer is untouched.")) return;
+    await dbDelete(id);
+    if(objectUrls.has(id)){ URL.revokeObjectURL(objectUrls.get(id)); objectUrls.delete(id); }
+    invalidateThumb(id);
+    library = library.filter(v=>v.id!==id);
+    renderGrid();
+    toast("Removed from library");
+  }
+
+  // ---------- Adding files ----------
+  $("#addBtn").addEventListener("click", ()=> $("#fileInput").click());
+  $("#fileInput").addEventListener("change", async (e)=>{
+    const files = Array.from(e.target.files);
+    for(const file of files){
+      await addFile(file);
+    }
+    e.target.value = "";
+    renderGrid();
+  });
+
+  function addFile(file){
+    return new Promise((resolve)=>{
+      const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random();
+      const rec = {
+        id, title: stripExt(file.name), filename: file.name,
+        blob: file, thumbBlob: null, duration: 0,
+        addedAt: Date.now(), size: file.size
+      };
+      // probe duration
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.src = URL.createObjectURL(file);
+      v.onloadedmetadata = async ()=>{
+        rec.duration = v.duration;
+        URL.revokeObjectURL(v.src);
+        await dbPut(rec);
+        library.push(rec);
+        resolve();
+      };
+      v.onerror = async ()=>{
+        await dbPut(rec);
+        library.push(rec);
+        resolve();
+      };
+    });
+  }
+  function stripExt(name){
+    const i = name.lastIndexOf(".");
+    return i>0 ? name.slice(0,i) : name;
+  }
+
+  // drag & drop
+  document.addEventListener("dragover", e=>{ e.preventDefault(); });
+  document.addEventListener("drop", async e=>{
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files||[]).filter(f=>f.type.startsWith("video/"));
+    if(files.length===0) return;
+    for(const f of files) await addFile(f);
+    renderGrid();
+    toast(`Added ${files.length} video${files.length===1?'':'s'}`);
+  });
+
+  // ---------- Sorting / search ----------
+  document.querySelectorAll("#sortFilters .chip").forEach(chip=>{
+    chip.addEventListener("click", ()=>{
+      document.querySelectorAll("#sortFilters .chip").forEach(c=>c.classList.remove("active"));
+      chip.classList.add("active");
+      currentSort = chip.dataset.sort;
+      renderGrid();
+    });
+  });
+  $("#searchInput").addEventListener("input", renderGrid);
+
+  // ---------- Player ----------
+  const overlay = $("#overlay");
+  const mainVideo = $("#mainVideo");
+  const playerTitle = $("#playerTitle");
+  const scrubSlider = $("#scrubSlider");
+  const scrubCanvas = $("#scrubCanvas");
+  const scrubCtx = scrubCanvas.getContext("2d");
+  const scrubTime = $("#scrubTime");
+
+  function openPlayer(id){
+    const rec = library.find(v=>v.id===id);
+    if(!rec) return;
+    activeId = id;
+    mainVideo.src = getVideoUrl(rec);
+    playerTitle.value = rec.title;
+    $("#playerTags").textContent = `${rec.filename}  ·  ${fmtSize(rec.size)}`;
+    overlay.classList.add("open");
+    mainVideo.onloadedmetadata = ()=>{
+      scrubSlider.max = mainVideo.duration || 100;
+      scrubSlider.value = 0;
+      drawScrubFrame(0);
+    };
+  }
+  function closePlayer(){
+    overlay.classList.remove("open");
+    mainVideo.pause();
+    mainVideo.src = "";
+    activeId = null;
+  }
+  $("#closeBtn").addEventListener("click", closePlayer);
+  overlay.addEventListener("click", (e)=>{ if(e.target===overlay) closePlayer(); });
+  document.addEventListener("keydown", e=>{
+    if(e.key === "Escape"){
+      if(overlay.classList.contains("open")) closePlayer();
+      if($("#transferModal").classList.contains("open")) closeTransferModal();
+    }
+  });
+
+  // rename (auto-save on blur / enter)
+  playerTitle.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); playerTitle.blur(); }});
+  playerTitle.addEventListener("blur", async ()=>{
+    if(!activeId) return;
+    const rec = library.find(v=>v.id===activeId);
+    const newTitle = playerTitle.value.trim() || rec.filename;
+    if(newTitle !== rec.title){
+      rec.title = newTitle;
+      await dbPut(rec);
+      renderGrid();
+      toast("Renamed");
+    }
+  });
+
+  $("#deleteBtn").addEventListener("click", async ()=>{
+    if(!activeId) return;
+    const id = activeId;
+    closePlayer();
+    await removeVideo(id);
+  });
+
+  // ---------- Thumbnail scrubbing ----------
+  // hidden video used purely for frame extraction so we don't disturb main playback
+  const scrubVideo = document.createElement("video");
+  scrubVideo.muted = true;
+  scrubVideo.preload = "auto";
+  scrubVideo.style.display = "none";
+  document.body.appendChild(scrubVideo);
+
+  let scrubSeekPending = false;
+  function drawScrubFrame(t){
+    if(!activeId) return;
+    const rec = library.find(v=>v.id===activeId);
+    if(!rec) return;
+    if(scrubVideo.src !== getVideoUrl(rec)){
+      scrubVideo.src = getVideoUrl(rec);
+    }
+    const target = Math.min(Math.max(t,0), (scrubVideo.duration||mainVideo.duration||0));
+    scrubTime.textContent = fmtDuration(target);
+    const onSeeked = ()=>{
+      scrubVideo.removeEventListener("seeked", onSeeked);
+      scrubCtx.drawImage(scrubVideo, 0,0, scrubCanvas.width, scrubCanvas.height);
+      scrubSeekPending = false;
+    };
+    if(scrubSeekPending){
+      scrubVideo.removeEventListener("seeked", onSeeked);
+    }
+    scrubSeekPending = true;
+    scrubVideo.addEventListener("seeked", onSeeked, {once:true});
+    try{ scrubVideo.currentTime = target; }catch(err){}
+  }
+
+  scrubSlider.addEventListener("input", ()=>{
+    drawScrubFrame(parseFloat(scrubSlider.value));
+  });
+
+  $("#captureBtn").addEventListener("click", async ()=>{
+    if(!activeId) return;
+    scrubCanvas.toBlob(async (blob)=>{
+      if(!blob) return;
+      const rec = library.find(v=>v.id===activeId);
+      rec.thumbBlob = blob;
+      invalidateThumb(rec.id);
+      await dbPut(rec);
+      renderGrid();
+      toast("Thumbnail updated");
+    }, "image/jpeg", 0.85);
+  });
+
+  $("#resetThumbBtn").addEventListener("click", async ()=>{
+    if(!activeId) return;
+    const rec = library.find(v=>v.id===activeId);
+    rec.thumbBlob = null;
+    invalidateThumb(rec.id);
+    await dbPut(rec);
+    renderGrid();
+    toast("Thumbnail cleared");
+  });
+
+  // ---------- Theme ----------
+  const themeBtn = $("#themeBtn");
+  function applyTheme(t){
+    if(t) document.documentElement.setAttribute("data-theme", t);
+    else document.documentElement.removeAttribute("data-theme");
+  }
+  let savedTheme = null;
+  try{ savedTheme = localStorage.getItem("reel-theme"); }catch(e){}
+  if(savedTheme) applyTheme(savedTheme);
+  themeBtn.addEventListener("click", ()=>{
+    const cur = document.documentElement.getAttribute("data-theme");
+    const next = cur === "dark" ? "light" : "dark";
+    applyTheme(next);
+    try{ localStorage.setItem("reel-theme", next); }catch(e){}
+  });
+
+  // ---------- Transfer (JSON export/import) ----------
+  const transferModal = $("#transferModal");
+  function openTransferModal(){
+    transferModal.classList.add("open");
+    buildExportJson();
+  }
+  function closeTransferModal(){ transferModal.classList.remove("open"); }
+  $("#transferBtn").addEventListener("click", openTransferModal);
+  $("#closeTransfer").addEventListener("click", closeTransferModal);
+  transferModal.addEventListener("click", e=>{ if(e.target===transferModal) closeTransferModal(); });
+
+  $("#tabExport").addEventListener("click", ()=>{
+    $("#tabExport").classList.add("active"); $("#tabImport").classList.remove("active");
+    $("#exportPane").style.display=""; $("#importPane").style.display="none";
+  });
+  $("#tabImport").addEventListener("click", ()=>{
+    $("#tabImport").classList.add("active"); $("#tabExport").classList.remove("active");
+    $("#importPane").style.display=""; $("#exportPane").style.display="none";
+  });
+
+  function blobToBase64(blob){
+    return new Promise((resolve,reject)=>{
+      const reader = new FileReader();
+      reader.onloadend = ()=> resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function buildExportJson(){
+    const items = [];
+    for(const rec of library){
+      let thumb = null;
+      if(rec.thumbBlob){
+        thumb = await blobToBase64(rec.thumbBlob);
+      }
+      items.push({
+        filename: rec.filename,
+        title: rec.title,
+        duration: rec.duration,
+        thumbnail: thumb, // data URL, small jpeg — safe to include
+        addedAt: rec.addedAt
+      });
+    }
+    const payload = { app:"reel-video-library", version:1, exportedAt: Date.now(), items };
+    $("#exportArea").value = JSON.stringify(payload, null, 2);
+  }
+
+  $("#copyJsonBtn").addEventListener("click", async ()=>{
+    try{
+      await navigator.clipboard.writeText($("#exportArea").value);
+      toast("Copied JSON to clipboard");
+    }catch(e){
+      $("#exportArea").select();
+      document.execCommand("copy");
+      toast("Copied JSON to clipboard");
+    }
+  });
+
+  $("#downloadJsonBtn").addEventListener("click", ()=>{
+    const blob = new Blob([$("#exportArea").value], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "reel-library.json";
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  });
+
+  $("#doImportBtn").addEventListener("click", async ()=>{
+    let payload;
+    try{
+      payload = JSON.parse($("#importArea").value);
+    }catch(e){
+      toast("Invalid JSON");
+      return;
+    }
+    if(!payload || !Array.isArray(payload.items)){
+      toast("Unrecognized format");
+      return;
+    }
+    let matched = 0, unmatched = 0;
+    for(const item of payload.items){
+      const rec = library.find(v => v.filename === item.filename);
+      if(!rec){ unmatched++; continue; }
+      matched++;
+      if(item.title) rec.title = item.title;
+      if(item.thumbnail){
+        try{
+          const res = await fetch(item.thumbnail);
+          const blob = await res.blob();
+          rec.thumbBlob = blob;
+          invalidateThumb(rec.id);
+        }catch(e){}
+      }
+      await dbPut(rec);
+    }
+    renderGrid();
+    closeTransferModal();
+    toast(`Imported: ${matched} matched, ${unmatched} skipped (no matching file)`);
+  });
+
+  // ---------- Boot ----------
+  (async function init(){
+    await openDB();
+    library = await dbGetAll();
+    renderGrid();
+  })();
+
+})();
+</script>
+</body>
+</html>
